@@ -20,15 +20,15 @@ public class Brick {
         );
     }
 
-    public RectF getRect(){
+    public RectF getRect() {
         return this.rect;
     }
 
-    public void setInvisible(){
+    public void setInvisible() {
         isVisible = false;
     }
 
-    public boolean getVisibility(){
+    public boolean getVisibility() {
         return isVisible;
     }
 

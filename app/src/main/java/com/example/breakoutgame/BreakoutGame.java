@@ -31,8 +31,12 @@ public class BreakoutGame extends Activity {
 
     Paddle paddle;
     Ball ball;
+
     Brick[] bricks = new Brick[100];
     int numBricks = 0;
+
+    int score = 0;
+    int lives = 3;
 
 
     @Override
@@ -49,8 +53,6 @@ public class BreakoutGame extends Activity {
         Thread gameThread = null;
         SurfaceHolder ourHolder;
         volatile boolean playing;
-
-        // game is paused at the start
         boolean paused = true;
         Canvas canvas;
         Paint paint;
@@ -80,7 +82,7 @@ public class BreakoutGame extends Activity {
             // set the ball back to the start
             ball.reset(screenX, screenY);
 
-            // creating bricks
+            // create the brick wall
             int brickWidth = screenX / 8;
             int brickHeight = screenY / 10;
 
@@ -92,16 +94,21 @@ public class BreakoutGame extends Activity {
                     numBricks++;
                 }
             }
+
+            // if game over reset scores and lives
+            if (lives == 0) {
+                score = 0;
+                lives = 3;
+            }
         }
 
         @Override
         public void run() {
             while (playing) {
                 // counting fps
-
                 long startFrameTime = System.currentTimeMillis();
 
-                if (!paused){
+                if (!paused) {
                     update();
                 }
 
@@ -112,12 +119,66 @@ public class BreakoutGame extends Activity {
                     fps = 1000 / timeThisFrame;
                 }
             }
-
         }
 
         public void update() {
             paddle.update(fps);
             ball.update(fps);
+
+            // detect ball-brick collision
+            for (int i = 0; i < numBricks; i++) {
+                if (bricks[i].getVisibility()) {
+                    if (RectF.intersects(bricks[i].getRect(), ball.getRect())) {
+                        bricks[i].setInvisible();
+                        ball.reverseYVelocity();
+                        score += 10;
+                    }
+                }
+            }
+
+            // detect ball-paddle collision
+            if (RectF.intersects(paddle.getRect(), ball.getRect())) {
+                ball.setRandomXVelocity();
+                ball.reverseYVelocity();
+                ball.clearObstacleY(paddle.getRect().top - 2);
+            }
+
+            // bounce the ball back if it hits the bottom of the screen
+            if (ball.getRect().bottom > screenY) {
+                ball.reverseYVelocity();
+                ball.clearObstacleY(screenY - 2);
+
+                lives--;
+
+                if (lives == 0) {
+                    paused = true;
+                    createBricksAndRestart();
+                }
+            }
+
+            // bounce the ball if it hits the top of the screen
+            if (ball.getRect().top < 0) {
+                ball.reverseYVelocity();
+                ball.clearObstacleY(12);
+            }
+
+            // detect left wall collision
+            if (ball.getRect().left < 0) {
+                ball.reverseXVelocity();
+                ball.clearObstacleX(2);
+            }
+
+            // detect right wall collision
+            if (ball.getRect().right > screenX - 10) {
+                ball.reverseXVelocity();
+                ball.clearObstacleX(screenX - 22);
+            }
+
+            // detect the brick wall is broken
+            if (score == numBricks * 10) {
+                paused = true;
+                createBricksAndRestart();
+            }
         }
 
         public void draw() {
@@ -126,7 +187,7 @@ public class BreakoutGame extends Activity {
                 canvas = ourHolder.lockCanvas();
 
                 // draw the background color
-                canvas.drawColor(Color.argb(255,  26, 128, 182));
+                canvas.drawColor(Color.argb(255,  30, 30, 30));
 
                 // brush color for drawing
                 paint.setColor(Color.argb(255,  255, 255, 255));
@@ -147,6 +208,23 @@ public class BreakoutGame extends Activity {
                 }
 
                 // draw the HUD
+                paint.setColor(Color.argb(255,  255, 255, 255));
+
+                // draw the score and lives
+                paint.setTextSize(40);
+                canvas.drawText("Score: " + score + "   Lives: " + lives, 10,50, paint);
+
+                // whether the brick wall is broken
+                if (score == numBricks * 10) {
+                    paint.setTextSize(90);
+                    canvas.drawText("YOU HAVE WON!", 10, (float) screenY / 2, paint);
+                }
+
+                // whether the player has lost
+                if (lives <= 0) {
+                    paint.setTextSize(90);
+                    canvas.drawText("YOU HAVE LOST!", 10, (float) screenY / 2, paint);
+                }
 
                 // draw everything to the screen
                 ourHolder.unlockCanvasAndPost(canvas);

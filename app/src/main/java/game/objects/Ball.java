@@ -6,13 +6,12 @@ import java.util.Random;
 
 public class Ball {
     RectF rect;
-    float xVelocity;
-    float yVelocity;
+    public float xVelocity;
+    public float yVelocity;
     float ballWidth = 10;
     float ballHeight = 10;
 
     public Ball(int screenX, int screenY){
-        // starting speed = 100 pixels per second
         xVelocity = 200;
         yVelocity = -400;
 
